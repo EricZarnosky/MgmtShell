@@ -3,8 +3,12 @@ FROM ubuntu:24.04
 # Set build-time arguments for build info
 ARG BUILD_DATE
 ARG VCS_REF
+ARG PUID=0
+ARG PGID=0
 ENV BUILD_DATE=${BUILD_DATE}
 ENV VCS_REF=${VCS_REF}
+ENV PUID=${PUID}
+ENV PGID=${PGID}
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -56,11 +60,10 @@ RUN apt-get update && apt-get install -y \
     pandoc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Terraform and Vault from HashiCorp repository
-RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
-    && apt-get update && apt-get install -y terraform vault \
-    && rm -rf /var/lib/apt/lists/*
+# Install OpenTofu (Terraform alternative)
+RUN curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh \
+    && sh install-opentofu.sh --install-method rpm \
+    && rm install-opentofu.sh
 
 # Install kubectl
 RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
@@ -129,8 +132,11 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && ./aws/install \
     && rm -rf aws awscliv2.zip
 
-# Install Azure CLI
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+# Install Azure CLI (fix SSL issues by using manual method)
+RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/azure-cli.list \
+    && apt-get update && apt-get install -y azure-cli \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Google Cloud CLI (using new method)
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
@@ -214,6 +220,13 @@ RUN wget https://github.com/getsops/sops/releases/download/v3.9.3/sops-v3.9.3.li
     && mv sops-v3.9.3.linux.amd64 /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
+# Install OpenBao (Vault alternative)
+RUN OPENBAO_VERSION="2.1.0" \
+    && wget https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSION}/bao_${OPENBAO_VERSION}_linux_amd64.zip \
+    && unzip bao_${OPENBAO_VERSION}_linux_amd64.zip \
+    && mv bao /usr/local/bin/ \
+    && rm bao_${OPENBAO_VERSION}_linux_amd64.zip
+
 # Install pass (password manager)
 RUN apt-get update && apt-get install -y pass && rm -rf /var/lib/apt/lists/*
 
@@ -273,13 +286,13 @@ RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/inst
 RUN echo 'source /etc/bash_completion' >> /root/.bashrc \
     && echo 'source <(kubectl completion bash)' >> /root/.bashrc \
     && echo 'source <(helm completion bash)' >> /root/.bashrc \
-    && echo 'source <(terraform -install-autocomplete)' >> /root/.bashrc 2>/dev/null || true \
+    && echo 'source <(tofu -install-autocomplete)' >> /root/.bashrc 2>/dev/null || true \
     && echo 'source <(aws_completer)' >> /root/.bashrc \
     && echo 'source <(az completion bash)' >> /root/.bashrc \
     && echo 'source <(doctl completion bash)' >> /root/.bashrc \
     && echo 'source <(flux completion bash)' >> /root/.bashrc \
     && echo 'source <(argocd completion bash)' >> /root/.bashrc \
-    && echo 'source <(vault -autocomplete-install)' >> /root/.bashrc 2>/dev/null || true
+    && echo 'source <(bao -autocomplete-install)' >> /root/.bashrc 2>/dev/null || true
 
 # Setup zsh completions
 RUN echo 'autoload -U compinit && compinit' >> /root/.zshrc \
@@ -291,7 +304,7 @@ RUN echo 'autoload -U compinit && compinit' >> /root/.zshrc \
     && echo 'source <(doctl completion zsh)' >> /root/.zshrc \
     && echo 'source <(flux completion zsh)' >> /root/.zshrc \
     && echo 'source <(argocd completion zsh)' >> /root/.zshrc \
-    && echo 'source <(vault -autocomplete-install)' >> /root/.zshrc 2>/dev/null || true
+    && echo 'source <(bao -autocomplete-install)' >> /root/.zshrc 2>/dev/null || true
 
 # Create directories for mounted volumes
 RUN mkdir -p /root/config /etc/fstab.d

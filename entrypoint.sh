@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# Function to set user permissions based on PUID/PGID
+setup_user_permissions() {
+    local puid=${PUID:-0}
+    local pgid=${PGID:-0}
+    
+    echo "Setting up user permissions with PUID=$puid, PGID=$pgid"
+    
+    # Only modify if not using root (0:0)
+    if [ "$puid" != "0" ] || [ "$pgid" != "0" ]; then
+        # Create group if it doesn't exist
+        if ! getent group "$pgid" >/dev/null; then
+            groupadd -g "$pgid" mgmtuser
+        fi
+        
+        # Create user if it doesn't exist
+        if ! getent passwd "$puid" >/dev/null; then
+            useradd -u "$puid" -g "$pgid" -d /root -s "$(which bash)" mgmtuser
+        fi
+        
+        # Change ownership of config directory
+        chown -R "$puid:$pgid" /root/config 2>/dev/null || true
+    fi
+}
+
 # Function to set password from file or environment variable
 set_password() {
     local password=""
@@ -157,6 +181,9 @@ setup_ssh() {
 
 echo "=== Container Starting ==="
 echo "Timestamp: $(date)"
+
+# Set up user permissions
+setup_user_permissions
 
 # Set root password
 set_password

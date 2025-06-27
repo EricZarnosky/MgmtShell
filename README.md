@@ -9,7 +9,7 @@ A comprehensive Ubuntu 24.04 LTS development container with pre-installed tools 
 ### Installed Tools
 - **System Tools**: openssh, git, nano, vim, neovim, tmux, screen, mc, rsync, fzf, ripgrep
 - **Shells**: bash (with completion), zsh (with Oh My Zsh and completions)
-- **DevOps Tools**: terraform, kubectl, helm, kustomize, k9s, ansible, packer, pulumi
+- **DevOps Tools**: opentofu, kubectl, helm, kustomize, k9s, ansible, packer, pulumi
 - **Kubernetes**: talosctl, kubectx, kubens, flux, argocd, skaffold
 - **Container Tools**: docker-cli, nerdctl, crictl, containerd
 - **Programming Languages**: Python 3 (with pip), Go, Node.js (with npm, for JavaScript)
@@ -24,7 +24,7 @@ A comprehensive Ubuntu 24.04 LTS development container with pre-installed tools 
   - **SQL**: postgresql-client, mysql-client, sqlite3
   - **NoSQL**: mongosh, mongodb-database-tools, redis-tools, cqlsh (Cassandra), etcdctl
   - **Search**: elasticsearch-cli
-- **Security & Secrets**: sops, vault, pass, gpg
+- **Security & Secrets**: sops, openbao, pass, gpg
 - **Monitoring**: promtool (Prometheus)
 - **CI/CD**: jenkins-cli, flux, argocd, skaffold
 - **File Systems**: NFS and SMB/CIFS support
@@ -124,6 +124,8 @@ You can set the root password in two ways:
 environment:
   - PASSWORD=your_secure_password
   - SHELL=bash  # Options: bash, zsh, sh
+  - PUID=1000   # User ID for file permissions
+  - PGID=1000   # Group ID for file permissions
 ```
 
 **Method 2: Password File (Recommended for production)**
@@ -146,6 +148,26 @@ You can set the default shell for the root user using the `SHELL` environment va
 - `SHELL=bash` (default) - Use Bash shell
 - `SHELL=zsh` - Use Zsh with Oh My Zsh
 - `SHELL=sh` - Use basic sh shell
+
+### User Permissions
+
+You can set the user and group IDs for file ownership using the `PUID` and `PGID` environment variables:
+
+- `PUID=1000` - User ID (default: 0 for root)
+- `PGID=1000` - Group ID (default: 0 for root)
+
+This is useful when mounting volumes to ensure files have the correct ownership on the host system:
+
+```bash
+# Get your user ID and group ID
+id
+# uid=1000(username) gid=1000(username)
+
+# Set in docker-compose.yml
+environment:
+  - PUID=1000
+  - PGID=1000
+```
 
 The shell setting affects:
 - Default login shell for SSH connections
@@ -281,9 +303,9 @@ docker exec -it mgmtshell talosctl config endpoint 10.0.0.1
 
 ### Infrastructure as Code
 ```bash
-# Terraform
-docker exec -it mgmtshell terraform plan
-docker exec -it mgmtshell terraform apply
+# OpenTofu (Terraform alternative)
+docker exec -it mgmtshell tofu plan
+docker exec -it mgmtshell tofu apply
 
 # Pulumi
 docker exec -it mgmtshell pulumi up
@@ -294,9 +316,9 @@ docker exec -it mgmtshell packer build template.json
 
 ### Security & Secrets Management
 ```bash
-# HashiCorp Vault
-docker exec -it mgmtshell vault login
-docker exec -it mgmtshell vault kv get secret/myapp
+# OpenBao (Vault alternative)
+docker exec -it mgmtshell bao login
+docker exec -it mgmtshell bao kv get secret/myapp
 
 # SOPS (encrypted files)
 docker exec -it mgmtshell sops -e secrets.yaml
@@ -540,6 +562,8 @@ jobs:
 | `PASSWORD` | `password` | Root user password |
 | `PASSWORD_FILE` | - | Path to file containing password |
 | `SHELL` | `bash` | Default shell (bash, zsh, sh) |
+| `PUID` | `0` | User ID for file permissions |
+| `PGID` | `0` | Group ID for file permissions |
 | `TZ` | `UTC` | Timezone |
 | `ENABLE_TAILSCALE` | `false` | Enable Tailscale daemon |
 

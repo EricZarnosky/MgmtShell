@@ -20,6 +20,8 @@ services:
       # - PASSWORD_FILE=/run/secrets/root_password  # Uncomment to use password file
       - TZ=UTC
       - SHELL=bash  # Options: bash, zsh, sh
+      - PUID=1000  # User ID for file permissions
+      - PGID=1000  # Group ID for file permissions
       - ENABLE_TAILSCALE=false  # Set to true to enable Tailscale
     
     # Volume mounts
