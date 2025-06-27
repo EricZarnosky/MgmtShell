@@ -54,10 +54,10 @@ RUN apt-get update && apt-get install -y \
     httpie \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Terraform
+# Install Terraform and Vault from HashiCorp repository
 RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
-    && apt-get update && apt-get install -y terraform \
+    && apt-get update && apt-get install -y terraform vault \
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
@@ -192,16 +192,10 @@ RUN curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/sk
 
 # Install SOPS (Secrets OPerationS) - latest version (moved to getsops org)
 RUN SOPS_VERSION=$(curl -s https://api.github.com/repos/getsops/sops/releases/latest | jq -r .tag_name) \
+    && echo "Installing SOPS version: $SOPS_VERSION" \
     && wget https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64 \
     && mv sops-${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
-
-# Install HashiCorp Vault CLI - latest version
-RUN VAULT_VERSION=$(curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r .tag_name | sed 's/v//') \
-    && wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip \
-    && unzip vault_${VAULT_VERSION}_linux_amd64.zip \
-    && mv vault /usr/local/bin/ \
-    && rm vault_${VAULT_VERSION}_linux_amd64.zip
 
 # Install pass (password manager)
 RUN apt-get update && apt-get install -y pass && rm -rf /var/lib/apt/lists/*
