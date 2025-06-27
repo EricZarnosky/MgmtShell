@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mgmtshell:
     build: .
@@ -17,6 +19,7 @@ services:
       - PASSWORD=password  # Change this or use PASSWORD_FILE
       # - PASSWORD_FILE=/run/secrets/root_password  # Uncomment to use password file
       - TZ=UTC
+      - SHELL=bash  # Options: bash, zsh, sh
       - ENABLE_TAILSCALE=false  # Set to true to enable Tailscale
     
     # Volume mounts

@@ -10,7 +10,8 @@ ENV VCS_REF=${VCS_REF}
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC \
     PASSWORD=password \
-    PASSWORD_FILE=""
+    PASSWORD_FILE="" \
+    SHELL=bash
 
 # Install base packages and dependencies
 RUN apt-get update && apt-get install -y \
@@ -95,9 +96,9 @@ RUN wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add -
 # Install Redis CLI
 RUN apt-get update && apt-get install -y redis-tools && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-RUN python3 -m pip install --upgrade pip \
-    && pip3 install ansible ansible-core httpie
+# Install Python packages (using --break-system-packages for system-wide installation in container)
+RUN python3 -m pip install --upgrade pip --break-system-packages \
+    && pip3 install ansible ansible-core httpie --break-system-packages
 
 # Install yq (YAML processor) - latest version
 RUN YQ_VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r .tag_name) \
@@ -237,10 +238,10 @@ RUN mkdir -p /opt/dynamodb \
     && curl -L https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz | tar xz -C /opt/dynamodb
 
 # Install Cassandra CLI (cqlsh) via pip
-RUN pip3 install cqlsh
+RUN pip3 install cqlsh --break-system-packages
 
 # Install Elasticsearch CLI tools
-RUN pip3 install elasticsearch-cli
+RUN pip3 install elasticsearch-cli --break-system-packages
 
 # Install etcd client (etcdctl) - latest version
 RUN ETCD_VER=$(curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | jq -r .tag_name) \

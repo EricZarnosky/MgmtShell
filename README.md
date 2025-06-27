@@ -81,6 +81,38 @@ docker pull ghcr.io/ericzarnosky/mgmtshell:latest
 # image: ghcr.io/ericzarnosky/mgmtshell:latest
 ```
 
+## Docker Run Command
+
+For quick CLI usage without docker-compose:
+
+```bash
+# Basic usage (bash shell, default password)
+docker run -d --name mgmtshell --privileged --network host -p 2222:22 -e PASSWORD=mypassword -v ./config:/root/config ghcr.io/ericzarnosky/mgmtshell:latest
+
+# With custom shell
+docker run -d --name mgmtshell --privileged --network host -p 2222:22 -e PASSWORD=mypassword -e SHELL=zsh -v ./config:/root/config ghcr.io/ericzarnosky/mgmtshell:latest
+
+# Full command with all options
+docker run -d \
+  --name mgmtshell \
+  --hostname mgmtshell \
+  --restart unless-stopped \
+  --privileged \
+  --network host \
+  -p 2222:22 \
+  -e PASSWORD=your_secure_password \
+  -e SHELL=bash \
+  -e TZ=UTC \
+  -e ENABLE_TAILSCALE=false \
+  -v $(pwd)/config:/root/config \
+  -v $(pwd)/config/fstab:/etc/fstab:ro \
+  --cap-add SYS_ADMIN \
+  --cap-add NET_ADMIN \
+  --cap-add DAC_READ_SEARCH \
+  --device /dev/fuse \
+  ghcr.io/ericzarnosky/mgmtshell:latest
+```
+
 ## Configuration
 
 ### Password Management
@@ -91,12 +123,14 @@ You can set the root password in two ways:
 ```yaml
 environment:
   - PASSWORD=your_secure_password
+  - SHELL=bash  # Options: bash, zsh, sh
 ```
 
 **Method 2: Password File (Recommended for production)**
 ```yaml
 environment:
   - PASSWORD_FILE=/run/secrets/root_password
+  - SHELL=zsh  # Set your preferred shell
 secrets:
   - root_password
 
@@ -104,6 +138,19 @@ secrets:
   root_password:
     file: ./secrets/root_password.txt
 ```
+
+### Shell Configuration
+
+You can set the default shell for the root user using the `SHELL` environment variable:
+
+- `SHELL=bash` (default) - Use Bash shell
+- `SHELL=zsh` - Use Zsh with Oh My Zsh
+- `SHELL=sh` - Use basic sh shell
+
+The shell setting affects:
+- Default login shell for SSH connections
+- Shell used in `docker exec` when not specified
+- Shell completions and configurations loaded
 
 ### Persistent Configuration Files
 
@@ -387,6 +434,11 @@ This ensures you always have the most current versions with latest features and 
 - Use `docker exec -it mgmtshell huh --app <tool>` for detailed tool information
 - Check if tool is in PATH: `docker exec -it mgmtshell which <tool>`
 
+### Shell Issues
+- Check current shell: `docker exec -it mgmtshell echo $SHELL`
+- Verify shell setting: `docker exec -it mgmtshell getent passwd root`
+- Override temporarily: `docker exec -it mgmtshell zsh` or `docker exec -it mgmtshell bash`
+
 ## Customization
 
 ### Adding More Tools
@@ -428,6 +480,23 @@ Create separate docker-compose files:
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
+### Shell Selection Examples
+
+**Default Bash:**
+```bash
+docker run -d --name mgmtshell-bash -e SHELL=bash -e PASSWORD=test123 -v ./config:/root/config ghcr.io/ericzarnosky/mgmtshell:latest
+```
+
+**Zsh with Oh My Zsh:**
+```bash
+docker run -d --name mgmtshell-zsh -e SHELL=zsh -e PASSWORD=test123 -v ./config:/root/config ghcr.io/ericzarnosky/mgmtshell:latest
+```
+
+**Minimal sh:**
+```bash
+docker run -d --name mgmtshell-sh -e SHELL=sh -e PASSWORD=test123 -v ./config:/root/config ghcr.io/ericzarnosky/mgmtshell:latest
+```
+
 ### Using with CI/CD
 The container can be used in CI/CD pipelines:
 
@@ -438,11 +507,23 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ericzarnosky/mgmtshell:latest
+      env:
+        SHELL: bash
     steps:
       - uses: actions/checkout@v4
       - name: Deploy with kubectl
         run: kubectl apply -f manifests/
 ```
+
+## Environment Variables Reference
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PASSWORD` | `password` | Root user password |
+| `PASSWORD_FILE` | - | Path to file containing password |
+| `SHELL` | `bash` | Default shell (bash, zsh, sh) |
+| `TZ` | `UTC` | Timezone |
+| `ENABLE_TAILSCALE` | `false` | Enable Tailscale daemon |
 
 ## Contributing
 

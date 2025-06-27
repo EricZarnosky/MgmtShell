@@ -104,8 +104,30 @@ start_tailscale() {
 
 # Function to setup shell defaults
 setup_shells() {
-    # Set zsh as default shell for root
-    chsh -s /usr/bin/zsh root
+    # Determine which shell to use based on SHELL environment variable
+    local target_shell="bash"  # default
+    
+    case "${SHELL,,}" in  # Convert to lowercase
+        "sh"|"bash")
+            target_shell="bash"
+            ;;
+        "zsh")
+            target_shell="zsh"
+            ;;
+        *)
+            echo "Warning: Unknown shell '$SHELL', defaulting to bash"
+            target_shell="bash"
+            ;;
+    esac
+    
+    echo "Setting default shell to: $target_shell"
+    
+    # Set the shell for root user
+    if [ "$target_shell" = "zsh" ]; then
+        chsh -s /usr/bin/zsh root
+    else
+        chsh -s /usr/bin/bash root
+    fi
     
     # Ensure shell completion directories exist
     mkdir -p /etc/bash_completion.d
