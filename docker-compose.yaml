@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   mgmtshell:
     build: .
-    image: mgmtshell:latest
+    image: ghcr.io/ericzarnosky/mgmtshell:latest
     container_name: mgmtshell
     hostname: mgmtshell
     restart: unless-stopped
