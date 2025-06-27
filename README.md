@@ -343,4 +343,125 @@ The container is automatically built and published to GitHub Container Registry 
 - `:latest` - Latest build from main branch
 - `:main` - Latest main branch build
 - `:YYYY.MM.DD-<commit>` - Date and commit specific builds
-- `:v<version>
+- `:v<version>` - Semantic version tags (when you create releases)
+
+## Security Considerations
+
+1. **Change the default password** immediately
+2. **Use password files** instead of environment variables for production
+3. **Secure SSH keys** in the persistent `.ssh` directory
+4. **Network access** - Container runs in host network mode for Tailscale compatibility
+5. **Privileged mode** - Required for NFS/SMB mounting and Tailscale
+
+## Latest Versions
+
+All tools are automatically installed with their latest versions at build time:
+
+- **Go**: Latest stable from https://go.dev/VERSION?m=text
+- **Node.js**: Latest LTS from nodejs.org API
+- **Kubernetes tools**: Latest from GitHub releases API
+- **Cloud tools**: Latest from official repositories
+- **Security tools**: Latest from GitHub releases API
+
+This ensures you always have the most current versions with latest features and security updates.
+
+## Troubleshooting
+
+### SSH Connection Issues
+- Verify port mapping: `docker-compose ps`
+- Check SSH service: `docker exec -it mgmtshell systemctl status ssh`
+- Review logs: `docker-compose logs mgmtshell`
+
+### Mount Issues
+- Ensure proper privileges and capabilities are set
+- Check fstab syntax in `./config/fstab`
+- Verify network connectivity to NFS/SMB servers
+
+### Tailscale Issues
+- Check daemon status: `docker exec -it mgmtshell tailscale status`
+- Re-authenticate: `docker exec -it mgmtshell tailscale up`
+- Check logs: `docker exec -it mgmtshell journalctl -u tailscaled`
+
+### Tool Version Issues
+- Run `docker exec -it mgmtshell huh` to see all installed versions
+- Use `docker exec -it mgmtshell huh --app <tool>` for detailed tool information
+- Check if tool is in PATH: `docker exec -it mgmtshell which <tool>`
+
+## Customization
+
+### Adding More Tools
+Edit the Dockerfile to install additional packages:
+
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    your-additional-package \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### Shell Customization
+- Bash: Edit `./config/.bashrc`
+- Zsh: Edit `./config/.zshrc`
+- Oh My Zsh themes and plugins can be configured in `.zshrc`
+
+### Port Changes
+Modify the ports section in docker-compose.yml:
+
+```yaml
+ports:
+  - "your_port:22"
+```
+
+## Advanced Usage
+
+### Docker-in-Docker
+Uncomment the Docker socket mount in docker-compose.yml:
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+```
+
+### Multiple Environments
+Create separate docker-compose files:
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### Using with CI/CD
+The container can be used in CI/CD pipelines:
+
+```yaml
+# GitHub Actions example
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ericzarnosky/mgmtshell:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy with kubectl
+        run: kubectl apply -f manifests/
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test the build locally: `docker-compose build`
+5. Submit a pull request
+
+## License
+
+This project is open source. See the repository for license details.
+
+## Support
+
+For issues and questions:
+- Create an issue on GitHub: https://github.com/EricZarnosky/MgmtShell/issues
+- Check existing discussions and documentation
+
+---
+
+**MgmtShell** - Your complete infrastructure management toolkit in a container! 🚀
