@@ -50,6 +50,8 @@ RUN apt-get update && apt-get install -y \
     gpg \
     ripgrep \
     fzf \
+    ansible \
+    httpie \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Terraform
@@ -96,9 +98,6 @@ RUN wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add -
 # Install Redis CLI
 RUN apt-get update && apt-get install -y redis-tools && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages (skip pip upgrade, use system pip directly)
-RUN pip3 install ansible ansible-core httpie --break-system-packages
-
 # Install yq (YAML processor) - latest version
 RUN YQ_VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r .tag_name) \
     && wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/local/bin/yq \
@@ -113,9 +112,9 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 # Install Azure CLI
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
-# Install Google Cloud CLI
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
-    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
+# Install Google Cloud CLI (using new method)
+RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update && apt-get install -y google-cloud-cli \
     && rm -rf /var/lib/apt/lists/*
 
@@ -236,10 +235,10 @@ RUN K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/lat
 RUN mkdir -p /opt/dynamodb \
     && curl -L https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz | tar xz -C /opt/dynamodb
 
-# Install Cassandra CLI (cqlsh) via pip
+# Install Cassandra CLI (cqlsh) via pip (not available in apt)
 RUN pip3 install cqlsh --break-system-packages
 
-# Install Elasticsearch CLI tools
+# Install Elasticsearch CLI tools (not available in apt)
 RUN pip3 install elasticsearch-cli --break-system-packages
 
 # Install etcd client (etcdctl) - latest version
