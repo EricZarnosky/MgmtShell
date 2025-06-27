@@ -52,6 +52,8 @@ RUN apt-get update && apt-get install -y \
     fzf \
     ansible \
     httpie \
+    xmlstarlet \
+    pandoc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Terraform and Vault from HashiCorp repository
@@ -102,6 +104,24 @@ RUN apt-get update && apt-get install -y redis-tools && rm -rf /var/lib/apt/list
 RUN YQ_VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r .tag_name) \
     && wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
+
+# Install additional processing tools
+# xq (XML processor using yq)
+RUN ln -s /usr/local/bin/yq /usr/local/bin/xq
+
+# Install hcl2json for HCL processing (Terraform files)
+RUN wget https://github.com/tmccombs/hcl2json/releases/download/v0.6.3/hcl2json_linux_amd64 -O /usr/local/bin/hcl2json \
+    && chmod +x /usr/local/bin/hcl2json
+
+# Install htmlq for HTML processing
+RUN wget https://github.com/mgdm/htmlq/releases/download/v0.4.0/htmlq-x86_64-linux.tar.gz \
+    && tar -xzf htmlq-x86_64-linux.tar.gz \
+    && mv htmlq /usr/local/bin/ \
+    && rm htmlq-x86_64-linux.tar.gz
+
+# Install dasel (universal data processor - JSON, YAML, TOML, XML, CSV)
+RUN wget https://github.com/TomWright/dasel/releases/download/v2.8.1/dasel_linux_amd64 -O /usr/local/bin/dasel \
+    && chmod +x /usr/local/bin/dasel
 
 # Install AWS CLI v2
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
@@ -166,12 +186,11 @@ RUN git clone https://github.com/ahmetb/kubectx /opt/kubectx \
 RUN curl -fsSL https://get.pulumi.com | sh \
     && mv /root/.pulumi/bin/pulumi /usr/local/bin/
 
-# Install Packer - latest version
-RUN PACKER_VERSION=$(curl -s https://api.github.com/repos/hashicorp/packer/releases/latest | jq -r .tag_name | sed 's/v//') \
-    && wget https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip \
-    && unzip packer_${PACKER_VERSION}_linux_amd64.zip \
+# Install Packer (use fixed version to avoid API rate limits)
+RUN wget https://releases.hashicorp.com/packer/1.11.2/packer_1.11.2_linux_amd64.zip \
+    && unzip packer_1.11.2_linux_amd64.zip \
     && mv packer /usr/local/bin/ \
-    && rm packer_${PACKER_VERSION}_linux_amd64.zip
+    && rm packer_1.11.2_linux_amd64.zip
 
 # Install Flux CLI - latest version
 RUN curl -s https://fluxcd.io/install.sh | bash
@@ -190,11 +209,9 @@ RUN curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/sk
     && install skaffold /usr/local/bin/ \
     && rm skaffold
 
-# Install SOPS (Secrets OPerationS) - latest version (moved to getsops org)
-RUN SOPS_VERSION=$(curl -s https://api.github.com/repos/getsops/sops/releases/latest | jq -r .tag_name) \
-    && echo "Installing SOPS version: $SOPS_VERSION" \
-    && wget https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64 \
-    && mv sops-${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops \
+# Install SOPS (use fixed version to avoid API rate limits)
+RUN wget https://github.com/getsops/sops/releases/download/v3.9.3/sops-v3.9.3.linux.amd64 \
+    && mv sops-v3.9.3.linux.amd64 /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
 # Install pass (password manager)
@@ -207,8 +224,8 @@ RUN PROMETHEUS_VERSION=$(curl -s https://api.github.com/repos/prometheus/prometh
     && mv prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool /usr/local/bin/ \
     && rm -rf prometheus-${PROMETHEUS_VERSION}.linux-amd64*
 
-# Install Nix package manager
-RUN sh <(curl -L https://nixos.org/nix/install) --daemon \
+# Install Nix package manager (fix shell syntax)
+RUN curl -L https://nixos.org/nix/install | sh -s -- --daemon \
     && echo '. /root/.nix-profile/etc/profile.d/nix.sh' >> /root/.bashrc \
     && echo '. /root/.nix-profile/etc/profile.d/nix.sh' >> /root/.zshrc
 
