@@ -96,9 +96,8 @@ RUN wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add -
 # Install Redis CLI
 RUN apt-get update && apt-get install -y redis-tools && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages (using --break-system-packages for system-wide installation in container)
-RUN python3 -m pip install --upgrade pip --break-system-packages \
-    && pip3 install ansible ansible-core httpie --break-system-packages
+# Install Python packages (skip pip upgrade, use system pip directly)
+RUN pip3 install ansible ansible-core httpie --break-system-packages
 
 # Install yq (YAML processor) - latest version
 RUN YQ_VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r .tag_name) \
