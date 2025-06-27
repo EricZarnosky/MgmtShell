@@ -19,7 +19,7 @@ A comprehensive Ubuntu 24.04 LTS development container with pre-installed tools 
   - **Google Cloud**: gcloud
   - **DigitalOcean**: doctl
   - **Multi-cloud**: PowerShell
-- **Data Processing**: jq, yq, httpie
+- **Data Processing**: jq, yq, xq, hcl2json, htmlq, dasel, httpie, xmlstarlet, pandoc
 - **Database CLI Tools**: 
   - **SQL**: postgresql-client, mysql-client, sqlite3
   - **NoSQL**: mongosh, mongodb-database-tools, redis-tools, cqlsh (Cassandra), etcdctl
@@ -331,9 +331,27 @@ docker exec -it mgmtshell sqlite3 database.db
 
 ### Data Processing & APIs
 ```bash
-# JSON/YAML processing
+# JSON processing
 docker exec -it mgmtshell echo '{"name":"test"}' | jq '.name'
+
+# YAML processing  
 docker exec -it mgmtshell yq '.spec.containers[0].name' pod.yaml
+
+# XML processing
+docker exec -it mgmtshell echo '<root><name>test</name></root>' | xq '.root.name'
+docker exec -it mgmtshell xmlstarlet sel -t -v "//name" file.xml
+
+# HCL processing (Terraform files)
+docker exec -it mgmtshell hcl2json main.tf | jq '.resource'
+
+# HTML processing
+docker exec -it mgmtshell htmlq 'title' index.html
+
+# Universal data processing (JSON, YAML, TOML, XML, CSV)
+docker exec -it mgmtshell dasel -f data.yaml '.items.[0].name'
+
+# Markdown processing
+docker exec -it mgmtshell pandoc README.md -o README.html
 
 # HTTP requests
 docker exec -it mgmtshell http GET api.example.com/users
