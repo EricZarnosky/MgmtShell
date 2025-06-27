@@ -174,8 +174,7 @@ RUN PACKER_VERSION=$(curl -s https://api.github.com/repos/hashicorp/packer/relea
     && rm packer_${PACKER_VERSION}_linux_amd64.zip
 
 # Install Flux CLI - latest version
-RUN curl -s https://fluxcd.io/install.sh | bash \
-    && mv /root/.local/bin/flux /usr/local/bin/
+RUN curl -s https://fluxcd.io/install.sh | bash
 
 # Install ArgoCD CLI - latest version
 RUN ARGO_VERSION=$(curl -s https://api.github.com/repos/argoproj/argo-cd/releases/latest | jq -r .tag_name) \
@@ -183,11 +182,8 @@ RUN ARGO_VERSION=$(curl -s https://api.github.com/repos/argoproj/argo-cd/release
     && mv argocd-linux-amd64 /usr/local/bin/argocd \
     && chmod +x /usr/local/bin/argocd
 
-# Install Jenkins CLI (using latest stable war to get CLI)
-RUN wget https://get.jenkins.io/war-stable/latest/jenkins.war -O /tmp/jenkins.war \
-    && java -jar /tmp/jenkins.war --help || true \
-    && rm /tmp/jenkins.war \
-    && wget https://repo.jenkins-ci.org/public/org/jenkins-ci/main/cli/2.426/cli-2.426.jar -O /usr/local/bin/jenkins-cli.jar
+# Install Jenkins CLI (download jenkins-cli.jar directly)
+RUN wget https://repo.jenkins-ci.org/public/org/jenkins-ci/main/cli/2.426/cli-2.426.jar -O /usr/local/bin/jenkins-cli.jar
 
 # Install Skaffold - latest version
 RUN curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 \
